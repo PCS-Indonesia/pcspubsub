@@ -1,4 +1,4 @@
-package pcssub
+package pcspubsub
 
 import (
 	"context"
