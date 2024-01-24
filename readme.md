@@ -12,4 +12,4 @@ Only for PCS.
 ## Installation
 
 Use `go get` to install the package:
-`go get github.com/pcspubsub/pubsubclient`
+```go get github.com/PCS-Indonesia/pcspubsub/pubsubclient```
