@@ -63,8 +63,10 @@ func DispatchSub(projectID string, topicName string, subscriptionName string, cr
 	return nil
 }
 
-func Publish(projectID string, topicName string, subscriptionName string, credentialsPath string, msg string) error {
+func Publish(projectID string, topicName string, subscriptionName string, credentialsPath string, msg CommandMessage) error {
+	// Create a new context and client
 	ctx := context.Background()
+	// Create a new Pub/Sub client with service account credentials
 	client, err := pubsub.NewClient(ctx, projectID, option.WithCredentialsFile(credentialsPath))
 	if err != nil {
 		return err
@@ -78,8 +80,14 @@ func Publish(projectID string, topicName string, subscriptionName string, creden
 		}
 	}
 
+	// Publish a text message on the created topic
+	message, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
 	topic.Publish(ctx, &pubsub.Message{
-		Data: []byte(msg),
+		Data: message,
 	})
 
 	return nil
