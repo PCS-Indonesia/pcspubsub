@@ -68,3 +68,16 @@ func main() {
     }
 }
 ```
+
+### Test sample
+- Copy credential file to root directory
+- Copy `.env.example` as `.env` and fill it
+- Run pub with
+``` 
+go run sample.go pub
+```
+- Run sub with
+``` 
+go run sample.go sub
+```
+

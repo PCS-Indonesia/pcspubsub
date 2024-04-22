@@ -4,6 +4,7 @@ go 1.21.3
 
 require (
 	cloud.google.com/go/pubsub v1.33.0
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/api v0.156.0
 )
 

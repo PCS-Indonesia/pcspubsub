@@ -3,6 +3,7 @@ package pubsubclient
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
@@ -71,9 +72,13 @@ func (c *PubSubClient) PublishMessage(topicName string, msg CommandMessage) erro
 		return err
 	}
 
-	topic.Publish(c.ctx, &pubsub.Message{
+	if p, err := topic.Publish(c.ctx, &pubsub.Message{
 		Data: message,
-	})
+	}).Get(c.ctx); err == nil {
+		fmt.Printf("Published to topic %s with id %s\n", topicName, p)
+	} else {
+		fmt.Printf("Error publish to %s : %s\n", topicName, err)
+	}
 
 	return nil
 }
