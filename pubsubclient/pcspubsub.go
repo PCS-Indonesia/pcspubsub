@@ -71,9 +71,15 @@ func (c *PubSubClient) PublishMessage(topicName string, msg CommandMessage) erro
 		return err
 	}
 
-	topic.Publish(c.ctx, &pubsub.Message{
+	_, err = topic.Publish(c.ctx, &pubsub.Message{
 		Data: message,
-	})
+	}).Get(c.ctx)
 
-	return nil
+	return err
+}
+
+func (c *PubSubClient) CreateSubscription(subscriptionName string, topicName string) (*pubsub.Subscription, error) {
+	return c.client.CreateSubscription(c.ctx, subscriptionName, pubsub.SubscriptionConfig{
+		Topic: c.client.Topic(topicName),
+	})
 }
