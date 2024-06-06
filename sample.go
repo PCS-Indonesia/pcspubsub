@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/PCS-Indonesia/pcspubsub/pubsubclient"
 	"github.com/joho/godotenv"
@@ -26,12 +29,10 @@ func main() {
 	switch arg {
 	case "pub":
 		pub()
+	case "script":
+		createSub()
 	default:
 		sub()
-
-		for {
-			time.Sleep(5000 * time.Millisecond)
-		}
 	}
 }
 
@@ -44,7 +45,8 @@ func pub() {
 
 	topic := os.Getenv("PUBSUB_MMS_TOPIC")
 
-	client, err := pubsubclient.NewPubSubClient(os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+	ctx := context.TODO()
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
 	}
@@ -57,20 +59,50 @@ func pub() {
 	}
 }
 
-func sub() {
-	client, err := pubsubclient.NewPubSubClient(os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+func createSub() {
+	ctx := context.TODO()
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
 	}
 
+	if _, err := client.CreateSubscription(os.Getenv("PUBSUB_MMS_SUBS"), os.Getenv("PUBSUB_MMS_TOPIC")); err != nil {
+		log.Printf("Failed to create subscription: %v", err)
+	} else {
+		log.Println("Subscription created")
+	}
+}
+
+func sub() {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+	if err != nil {
+		log.Fatalf("Failed to create Pub/Sub client: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		sub := os.Getenv("PUBSUB_MMS_SUBS")
 		err = client.ReceiveMessages(sub, subFunction)
 
 		if err != nil {
-			log.Printf("Failed to receive messages from : %s, %v", sub, err)
+			log.Panicf("Failed to receive messages from : %s, %v\n", sub, err)
 		}
+
+		log.Println("System has shutdown gracefully")
 	}()
+
+	// Cancel the context when a signal is received
+	<-sigchan
+	cancel()
+
+	// Wait for the goroutine to finish
+	wg.Wait()
 }
 
 func subFunction(msg pubsubclient.CommandMessage) {

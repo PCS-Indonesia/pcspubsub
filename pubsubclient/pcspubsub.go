@@ -26,8 +26,7 @@ type PubSubClient struct {
 	client *pubsub.Client
 }
 
-func NewPubSubClient(projectID string, credentialsPath string) (*PubSubClient, error) {
-	ctx := context.Background()
+func NewPubSubClient(ctx context.Context, projectID string, credentialsPath string) (*PubSubClient, error) {
 	client, err := pubsub.NewClient(ctx, projectID, option.WithCredentialsFile(credentialsPath))
 	if err != nil {
 		return nil, err
@@ -40,8 +39,13 @@ func NewPubSubClient(projectID string, credentialsPath string) (*PubSubClient, e
 }
 
 func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(msg CommandMessage)) error {
-	subscription := c.client.Subscription(subscriptionName)
+
+	subscription := c.client.Subscription(subscriptionName + "232")
 	err := subscription.Receive(c.ctx, func(ctx context.Context, msg *pubsub.Message) {
+		if ctx.Err() != nil {
+			msg.Nack()
+			return
+		}
 		var cmd CommandMessage
 		rs := json.Unmarshal(msg.Data, &cmd)
 		if rs == nil {
