@@ -38,9 +38,9 @@ func NewPubSubClient(ctx context.Context, projectID string, credentialsPath stri
 	}, nil
 }
 
-func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(msg CommandMessage)) error {
+func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(msg CommandMessage) error) error {
 
-	subscription := c.client.Subscription(subscriptionName + "232")
+	subscription := c.client.Subscription(subscriptionName)
 	err := subscription.Receive(c.ctx, func(ctx context.Context, msg *pubsub.Message) {
 		if ctx.Err() != nil {
 			msg.Nack()
@@ -49,8 +49,9 @@ func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ms
 		var cmd CommandMessage
 		rs := json.Unmarshal(msg.Data, &cmd)
 		if rs == nil {
-			callback(cmd)
-			msg.Ack()
+			if err := callback(cmd); err != nil {
+				msg.Ack()
+			}
 		}
 	})
 

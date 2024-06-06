@@ -105,6 +105,7 @@ func sub() {
 	wg.Wait()
 }
 
-func subFunction(msg pubsubclient.CommandMessage) {
+func subFunction(msg pubsubclient.CommandMessage) error {
 	fmt.Printf("Message: %+v\n", msg)
+	return nil
 }
