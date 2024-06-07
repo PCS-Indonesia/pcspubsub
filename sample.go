@@ -46,7 +46,7 @@ func pub() {
 	topic := os.Getenv("PUBSUB_MMS_TOPIC")
 
 	ctx := context.TODO()
-	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"), 1)
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
 	}
@@ -61,7 +61,7 @@ func pub() {
 
 func createSub() {
 	ctx := context.TODO()
-	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"), 1)
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
 	}
@@ -78,7 +78,7 @@ func sub() {
 	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"))
+	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"), 1)
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
 	}

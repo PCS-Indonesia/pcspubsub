@@ -22,25 +22,31 @@ type CommandMessage struct {
 // credentialsPath := "cred.json"
 
 type PubSubClient struct {
-	ctx    context.Context
-	client *pubsub.Client
+	ctx                   context.Context
+	client                *pubsub.Client
+	maxConcurrentMessages int
 }
 
-func NewPubSubClient(ctx context.Context, projectID string, credentialsPath string) (*PubSubClient, error) {
+func NewPubSubClient(ctx context.Context, projectID string, credentialsPath string, maxConcurrent int) (*PubSubClient, error) {
 	client, err := pubsub.NewClient(ctx, projectID, option.WithCredentialsFile(credentialsPath))
 	if err != nil {
 		return nil, err
 	}
+	if maxConcurrent == 0 {
+		maxConcurrent = 1
+	}
 
 	return &PubSubClient{
-		ctx:    ctx,
-		client: client,
+		ctx:                   ctx,
+		client:                client,
+		maxConcurrentMessages: maxConcurrent,
 	}, nil
 }
 
 func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(msg CommandMessage) error) error {
 
 	subscription := c.client.Subscription(subscriptionName)
+	subscription.ReceiveSettings.MaxOutstandingMessages = c.maxConcurrentMessages
 	err := subscription.Receive(c.ctx, func(ctx context.Context, msg *pubsub.Message) {
 		if ctx.Err() != nil {
 			msg.Nack()
