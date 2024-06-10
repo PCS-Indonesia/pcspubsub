@@ -9,10 +9,11 @@ import (
 )
 
 type CommandMessage struct {
-	Command string `json:"command"`
-	Payload string `json:"payload"`
-	ID      uint   `json:"id"`
-	Detail  string `json:"detail"`
+	Command string          `json:"command"`
+	Payload string          `json:"payload"`
+	ID      uint            `json:"id"`
+	Detail  string          `json:"detail"`
+	Message *pubsub.Message `json:"-"`
 }
 
 // Set your Google Cloud project ID and topic name
@@ -55,6 +56,7 @@ func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ms
 		var cmd CommandMessage
 		rs := json.Unmarshal(msg.Data, &cmd)
 		if rs == nil {
+			cmd.Message = msg
 			if err := callback(cmd); err == nil {
 				msg.Ack()
 			}
