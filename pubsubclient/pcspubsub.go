@@ -55,7 +55,7 @@ func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ms
 		var cmd CommandMessage
 		rs := json.Unmarshal(msg.Data, &cmd)
 		if rs == nil {
-			if err := callback(cmd); err != nil {
+			if err := callback(cmd); err == nil {
 				msg.Ack()
 			}
 		}
