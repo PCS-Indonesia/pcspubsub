@@ -3,6 +3,7 @@ package pubsubclient
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
@@ -44,22 +45,27 @@ func NewPubSubClient(ctx context.Context, projectID string, credentialsPath stri
 	}, nil
 }
 
-func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(msg CommandMessage) error) error {
+func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ctx context.Context, msg CommandMessage) error) error {
 
 	subscription := c.client.Subscription(subscriptionName)
 	subscription.ReceiveSettings.MaxOutstandingMessages = c.maxConcurrentMessages
 	err := subscription.Receive(c.ctx, func(ctx context.Context, msg *pubsub.Message) {
-		if ctx.Err() != nil {
+		timeout := 120 * time.Second
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel() // Ensure the context is cancelled when the function returns
+		var cmd CommandMessage
+		err := json.Unmarshal(msg.Data, &cmd)
+		if err == nil {
+			cmd.Message = msg
+			if err := callback(ctxWithTimeout, cmd); err == nil {
+				msg.Ack()
+			} else {
+				msg.Nack()
+				return
+			}
+		} else {
 			msg.Nack()
 			return
-		}
-		var cmd CommandMessage
-		rs := json.Unmarshal(msg.Data, &cmd)
-		if rs == nil {
-			cmd.Message = msg
-			if err := callback(cmd); err == nil {
-				msg.Ack()
-			}
 		}
 	})
 
