@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/PCS-Indonesia/pcspubsub/pubsubclient"
 	"github.com/joho/godotenv"
@@ -29,6 +30,8 @@ func main() {
 	switch arg {
 	case "pub":
 		pub()
+	case "pubv2":
+		pubV2()
 	case "script":
 		createSub()
 	default:
@@ -49,6 +52,38 @@ func pub() {
 	client, err := pubsubclient.NewPubSubClient(ctx, os.Getenv("PUBSUB_PROJECT_ID"), os.Getenv("PUBSUB_CREDENTIAL"), 1)
 	if err != nil {
 		log.Fatalf("Failed to create Pub/Sub client: %v", err)
+	}
+
+	err = client.PublishMessage(topic, message)
+	fmt.Printf("Message: %+v\n", message)
+
+	if err != nil {
+		log.Printf("System: Error publish message topic %s, error: %v", topic, err)
+	}
+}
+
+func pubV2() {
+	var message pubsubclient.CommandMessage
+	message.Command = "notify"
+	message.Payload = "from external Account"
+	message.ID = 0
+	message.Detail = "from external Account"
+
+	topic := os.Getenv("PUBSUB_MMS_TOPIC")
+
+	ctx := context.TODO()
+	pubsub := pubsubclient.PubSubConfig{
+		ProjectID:     os.Getenv("PUBSUB_PROJECT_ID"),
+		TokenSource:   os.Getenv("PUBSUB_CREDENTIAL"),
+		MaxConcurrent: 1,
+		ExpiredToken:  time.Now().Add(1 * time.Hour), // Set expiration to 1 hour from now
+		Ctx:           ctx,
+	}
+
+	client, err := pubsub.NewPubSubClientWithTokenWIF()
+	if err != nil {
+		log.Fatalf("Failed to create Pub/Sub client: %v", err)
+		return
 	}
 
 	err = client.PublishMessage(topic, message)
