@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )
 
@@ -15,6 +16,14 @@ type CommandMessage struct {
 	ID      uint            `json:"id"`
 	Detail  string          `json:"detail"`
 	Message *pubsub.Message `json:"-"`
+}
+
+type PubSubConfig struct {
+	ProjectID     string    `json:"project_id"`
+	TokenSource   string    `json:"token_source"`
+	MaxConcurrent int       `json:"max_concurrent"`
+	ExpiredToken  time.Time `json:"expired_token"`
+	Ctx           context.Context
 }
 
 // Set your Google Cloud project ID and topic name
@@ -40,6 +49,31 @@ func NewPubSubClient(ctx context.Context, projectID string, credentialsPath stri
 
 	return &PubSubClient{
 		ctx:                   ctx,
+		client:                client,
+		maxConcurrentMessages: maxConcurrent,
+	}, nil
+}
+
+func (config *PubSubConfig) NewPubSubClientWithTokenWIF() (*PubSubClient, error) {
+	ts := oauth2.StaticTokenSource(&oauth2.Token{
+		AccessToken: config.TokenSource,
+		TokenType:   "Bearer",
+		Expiry:      config.ExpiredToken, // use the actual expiration time
+	})
+
+	client, err := pubsub.NewClient(config.Ctx, config.ProjectID, option.WithTokenSource(ts))
+	if err != nil {
+		return nil, err
+	}
+
+	// Set maxConcurrentMessages to 1 if it is 0
+	maxConcurrent := config.MaxConcurrent
+	if maxConcurrent == 0 {
+		maxConcurrent = 1
+	}
+
+	return &PubSubClient{
+		ctx:                   config.Ctx,
 		client:                client,
 		maxConcurrentMessages: maxConcurrent,
 	}, nil
