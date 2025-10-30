@@ -124,9 +124,18 @@ func (c *PubSubClient) PublishMessage(topicName string, msg CommandMessage) erro
 		return err
 	}
 
-	_, err = topic.Publish(c.ctx, &pubsub.Message{
-		Data: message,
-	}).Get(c.ctx)
+	pubsubMsg := &pubsub.Message{
+		Data:        message,
+		OrderingKey: "1",
+	}
+
+	if msg.Detail != "" {
+		pubsubMsg.Attributes = map[string]string{
+			"origin": msg.Detail,
+		}
+	}
+
+	_, err = topic.Publish(c.ctx, pubsubMsg).Get(c.ctx)
 
 	return err
 }
