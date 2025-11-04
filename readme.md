@@ -7,16 +7,18 @@
 ## Overview
 
 Internal Use of PCS Pub/Sub service.  
-***Only for PCS Applications***.
+**_Only for PCS Applications_**.
 
 ## Installation
 
 Use `go get` to install the package:
+
 ```
 go get github.com/PCS-Indonesia/pcspubsub/pubsubclient
 ```
 
 ## Command Message
+
 ```
 {
     "command" : "insert|update|delete|notify",
@@ -27,7 +29,6 @@ go get github.com/PCS-Indonesia/pcspubsub/pubsubclient
 ```
 
 ## Examples
-
 
 ### Listen to subscription
 
@@ -61,7 +62,7 @@ func main() {
     message.Command = "command"
     message.Payload = "your json body"
     message.ID      = "id"
-    message.Deatail = "detail"
+    message.Detail = "detail"
     err := pubsubclient.PublishMessage("topic-name", message)
     if err != nil {
         // Error Handling
@@ -70,14 +71,34 @@ func main() {
 ```
 
 ### Test sample
-- Copy credential file to root directory
-- Copy `.env.example` as `.env` and fill it
-- Run pub with
-``` 
+
+-   Copy credential file to root directory
+-   Copy `.env.example` as `.env` and fill it
+-   Run pub with
+
+```
 go run sample.go pub
 ```
-- Run sub with
-``` 
+
+-   Run sub with
+
+```
 go run sample.go sub
 ```
 
+### Message Ordering & Attribute Filter
+
+This package already enables **message ordering** (`OrderingKey`) and **attribute filtering** (`origin`).
+
+To use these features correctly:
+
+-   The **subscriber** must enable **message ordering** in its subscription settings.
+-   The **subscriber** should also configure an **attribute filter** to prevent receiving its own published messages.
+
+Example filter:
+
+```text
+attributes.origin != "apps-2"
+```
+
+In this example, "apps-2" comes from the message.Detail field in the published message.
