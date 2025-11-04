@@ -11,11 +11,12 @@ import (
 )
 
 type CommandMessage struct {
-	Command string          `json:"command"`
-	Payload string          `json:"payload"`
-	ID      uint            `json:"id"`
-	Detail  string          `json:"detail"`
-	Message *pubsub.Message `json:"-"`
+	Command    string            `json:"command"`
+	Payload    string            `json:"payload"`
+	ID         uint              `json:"id"`
+	Detail     string            `json:"detail"`
+	Message    *pubsub.Message   `json:"-"`
+	Attributes map[string]string `json:"-"`
 }
 
 type PubSubConfig struct {
@@ -80,7 +81,6 @@ func (config *PubSubConfig) NewPubSubClientWithTokenWIF() (*PubSubClient, error)
 }
 
 func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ctx context.Context, msg CommandMessage) error) error {
-
 	subscription := c.client.Subscription(subscriptionName)
 	subscription.ReceiveSettings.MaxOutstandingMessages = c.maxConcurrentMessages
 	err := subscription.Receive(c.ctx, func(ctx context.Context, msg *pubsub.Message) {
@@ -102,7 +102,6 @@ func (c *PubSubClient) ReceiveMessages(subscriptionName string, callback func(ct
 			return
 		}
 	})
-
 	if err != nil {
 		return err
 	}
@@ -129,10 +128,8 @@ func (c *PubSubClient) PublishMessage(topicName string, msg CommandMessage) erro
 		OrderingKey: "1",
 	}
 
-	if msg.Detail != "" {
-		pubsubMsg.Attributes = map[string]string{
-			"origin": msg.Detail,
-		}
+	if len(msg.Attributes) > 0 {
+		pubsubMsg.Attributes = msg.Attributes
 	}
 
 	_, err = topic.Publish(c.ctx, pubsubMsg).Get(c.ctx)
