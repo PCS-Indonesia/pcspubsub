@@ -132,6 +132,7 @@ func (c *PubSubClient) PublishMessage(topicName string, msg CommandMessage) erro
 		pubsubMsg.Attributes = msg.Attributes
 	}
 
+	topic.EnableMessageOrdering = true
 	_, err = topic.Publish(c.ctx, pubsubMsg).Get(c.ctx)
 
 	return err
